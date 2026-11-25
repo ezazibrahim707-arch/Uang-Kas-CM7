@@ -1,0 +1,988 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Uang Kas</title>
+<meta name="theme-color" content="#1b1260">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --text:#f4f2ff; --muted:#c3bff0; --line:rgba(255,255,255,.17);
+  --glass:rgba(20,14,78,.46); --field:rgba(8,5,42,.55);
+  --in:#6ee7b7; --out:#fda4af;
+  --a1:#7cb4ff; --a2:#b79cff; --ink:#0b0830;
+  --radius:18px;
+}
+*{box-sizing:border-box}
+html{color-scheme:dark}
+body{
+  margin:0; min-height:100vh; color:var(--text); line-height:1.5;
+  font-family:"Sora","Segoe UI",system-ui,-apple-system,Roboto,sans-serif;
+  background:#0b1a6b;
+}
+/* ---------- Latar luar angkasa ---------- */
+.space{
+  position:fixed; inset:0; z-index:0;
+  background:
+    radial-gradient(ellipse 60% 45% at 15% 8%,  rgba(96,140,255,.38), transparent 70%),
+    radial-gradient(ellipse 55% 50% at 88% 28%, rgba(176,96,255,.38), transparent 70%),
+    radial-gradient(ellipse 60% 45% at 35% 100%, rgba(70,110,255,.30), transparent 70%),
+    linear-gradient(160deg,#0a1766 0%,#2a1a8a 45%,#4b1b90 75%,#1a0e4c 100%);
+}
+#stars{position:fixed; inset:0; z-index:0; width:100%; height:100%; pointer-events:none}
+.wrap{position:relative; z-index:1; max-width:980px; margin:0 auto; padding:20px 16px 56px}
+
+/* ---------- Umum ---------- */
+h1,h2,h3,p{margin:0}
+.card{
+  background:var(--glass); border:1px solid var(--line); border-radius:var(--radius);
+  -webkit-backdrop-filter:blur(14px); backdrop-filter:blur(14px);
+  box-shadow:0 10px 40px rgba(5,3,40,.35);
+}
+.label{font-size:.74rem; letter-spacing:.09em; text-transform:uppercase; color:var(--muted)}
+.num{font-variant-numeric:tabular-nums}
+.btn{
+  font:inherit; font-weight:600; font-size:.9rem; cursor:pointer; color:var(--text);
+  background:rgba(255,255,255,.09); border:1px solid var(--line); border-radius:12px;
+  padding:10px 16px; transition:transform .12s, background .15s, border-color .15s;
+}
+.btn:hover{background:rgba(255,255,255,.16)}
+.btn:active{transform:translateY(1px)}
+.btn.primary{color:var(--ink); border-color:transparent; background:linear-gradient(120deg,var(--a1),var(--a2))}
+.btn.primary:hover{filter:brightness(1.08)}
+.btn.small{padding:7px 12px; font-size:.82rem; border-radius:10px}
+.btn.danger{color:#ffc2cc; border-color:rgba(253,164,175,.45)}
+:focus-visible{outline:2px solid #bcd6ff; outline-offset:2px}
+
+/* ---------- Header ---------- */
+.top{display:flex; align-items:center; justify-content:space-between; gap:12px; margin:6px 0 18px}
+.top h1{font-size:clamp(1.55rem,5vw,2.2rem); font-weight:700; letter-spacing:-.01em}
+.top p{color:var(--muted); font-size:.92rem; margin-top:2px}
+
+/* ---------- Tab bulan ---------- */
+.tabs{
+  position:relative; display:flex; gap:8px; overflow-x:auto; padding:2px 2px 10px; margin-bottom:6px;
+  scrollbar-width:thin; scrollbar-color:rgba(255,255,255,.3) transparent;
+}
+.tab{
+  flex:0 0 auto; font:inherit; font-size:.88rem; font-weight:600; cursor:pointer; color:var(--muted);
+  padding:9px 16px; border-radius:999px; border:1px solid var(--line);
+  background:rgba(255,255,255,.06); transition:background .15s,color .15s;
+}
+.tab:hover{background:rgba(255,255,255,.14); color:var(--text)}
+.tab[aria-current="true"]{color:var(--ink); border-color:transparent; background:linear-gradient(120deg,var(--a1),var(--a2))}
+.tab{position:relative}
+.tab.has::after{content:""; position:absolute; top:6px; right:7px; width:5px; height:5px; border-radius:50%; background:var(--in)}
+.tab[aria-current="true"].has::after{background:var(--ink)}
+.yearbar{display:flex; align-items:center; gap:6px; margin:0 0 10px}
+.yearbar strong{min-width:64px; text-align:center; font-size:1.05rem}
+.yearbar button{
+  font:inherit; font-size:1.1rem; line-height:1; width:34px; height:34px; border-radius:50%; cursor:pointer;
+  color:var(--text); background:rgba(255,255,255,.08); border:1px solid var(--line);
+}
+.yearbar button:hover:not(:disabled){background:rgba(255,255,255,.18)}
+.yearbar button:disabled{opacity:.35; cursor:default}
+.tag{display:inline-block; margin-left:8px; padding:1px 8px; border-radius:999px; font-size:.72rem; font-weight:600; color:#ffe3a3; background:rgba(255,227,163,.14); white-space:nowrap}
+[hidden]{display:none!important}
+@media (min-width:701px){.tabs{flex-wrap:wrap; overflow:visible}}
+
+/* ---------- Ringkasan ---------- */
+.hero{padding:22px 24px; margin-bottom:14px; position:relative; overflow:hidden}
+.hero::after{
+  content:""; position:absolute; right:-60px; top:-60px; width:220px; height:220px; border-radius:50%;
+  background:radial-gradient(circle,rgba(183,156,255,.35),transparent 70%); pointer-events:none;
+}
+.hero .big{display:block; font-size:clamp(2rem,7vw,3.3rem); font-weight:700; letter-spacing:-.02em; margin:4px 0 2px}
+.hero .sub{color:var(--muted); font-size:.88rem}
+.stats{display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-bottom:26px}
+.stat{padding:16px 18px}
+.stat strong{display:block; font-size:1.3rem; margin-top:4px}
+.stat.in strong{color:var(--in)}
+.stat.out strong{color:var(--out)}
+.sec-title{display:flex; flex-wrap:wrap; align-items:baseline; justify-content:space-between; gap:2px 10px; margin:0 2px 12px}
+.sec-title h2{font-size:1.08rem; font-weight:600; white-space:nowrap}
+.sec-title span{color:var(--muted); font-size:.82rem}
+
+/* ---------- Per orang ---------- */
+.people{display:grid; grid-template-columns:repeat(auto-fill,minmax(210px,1fr)); gap:12px; margin-bottom:28px}
+.person{padding:16px 18px}
+.person .who{display:flex; align-items:center; gap:10px; margin-bottom:12px}
+.avatar{
+  width:36px; height:36px; border-radius:50%; display:grid; place-items:center; flex:0 0 auto;
+  font-weight:700; color:var(--ink);
+}
+.person .name{font-weight:600; overflow-wrap:anywhere}
+.person dl{margin:0; display:grid; gap:6px}
+.person dl div{display:flex; justify-content:space-between; gap:8px; font-size:.86rem}
+.person dt{color:var(--muted)}
+.person dd{margin:0; font-weight:600}
+.person dd.total{font-size:1rem}
+.pos{color:var(--in)} .neg{color:var(--out)}
+
+/* ---------- Daftar transaksi ---------- */
+.list{overflow:hidden}
+.row{
+  display:grid; grid-template-columns:120px 150px 1fr 150px; gap:6px 12px; align-items:center;
+  padding:12px 18px; border-top:1px solid var(--line);
+}
+.is-admin .row{grid-template-columns:110px 140px 1fr 140px 124px; column-gap:14px}
+.row.head{border-top:0; font-size:.72rem; letter-spacing:.09em; text-transform:uppercase; color:var(--muted); background:rgba(255,255,255,.05)}
+.row .date{color:var(--muted); font-size:.86rem}
+.row .who{font-weight:600; overflow-wrap:anywhere}
+.row .who.umum{color:var(--muted); font-weight:500; font-style:italic}
+.row .desc{color:#e4e1fb; overflow-wrap:anywhere}
+.row .amt{text-align:right; font-weight:700; font-variant-numeric:tabular-nums}
+.row .acts{display:flex; gap:6px; justify-content:flex-end}
+.icon-btn{
+  font:inherit; font-size:.75rem; font-weight:600; cursor:pointer; color:var(--text);
+  background:rgba(255,255,255,.08); border:1px solid var(--line); border-radius:8px; padding:4px 9px;
+}
+.icon-btn:hover{background:rgba(255,255,255,.18)}
+.icon-btn.del{color:#ffc2cc}
+.empty{padding:34px 18px; text-align:center; color:var(--muted)}
+
+/* ---------- Panel admin ---------- */
+.adminbar{
+  position:sticky; top:0; z-index:5; padding:10px 16px;
+  background:rgba(14,9,60,.82); -webkit-backdrop-filter:blur(12px); backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--line);
+}
+.adminbar-in{max-width:980px; margin:0 auto; display:flex; flex-wrap:wrap; align-items:center; gap:8px}
+.grow{flex:1}
+.pill-admin{font-size:.74rem; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--ink); background:linear-gradient(120deg,var(--a1),var(--a2)); padding:4px 10px; border-radius:999px}
+.dirty{font-size:.82rem; color:#ffe3a3}
+.howto{max-width:980px; margin:8px auto 0; font-size:.84rem; color:var(--muted)}
+.howto summary{cursor:pointer}
+.howto ol{margin:8px 0 2px; padding-left:20px}
+.panel{padding:20px; margin-bottom:26px}
+.panel h2{font-size:1.08rem; font-weight:600; margin-bottom:14px}
+.seg{display:inline-flex; padding:4px; gap:4px; border-radius:14px; background:var(--field); border:1px solid var(--line); margin-bottom:14px}
+.seg button{font:inherit; font-weight:600; font-size:.88rem; cursor:pointer; color:var(--muted); background:transparent; border:0; border-radius:10px; padding:8px 16px}
+.seg button[aria-pressed="true"].masuk{background:rgba(110,231,183,.2); color:var(--in)}
+.seg button[aria-pressed="true"].keluar{background:rgba(253,164,175,.2); color:var(--out)}
+.fgrid{display:grid; grid-template-columns:repeat(3,1fr); gap:12px}
+.fgrid .span3{grid-column:1/-1}
+label.f{display:grid; align-content:start; gap:6px; font-size:.78rem; color:var(--muted); font-weight:600}
+input,select{
+  font:inherit; font-size:.95rem; color:var(--text); width:100%;
+  background:var(--field); border:1px solid var(--line); border-radius:12px; padding:10px 12px;
+}
+input::placeholder{color:rgba(195,191,240,.55)}
+select option{background:#1a1450; color:#fff}
+.preview{font-size:.8rem; color:var(--muted); min-height:1.2em; font-weight:500}
+.err{color:#ffb3c0; font-size:.86rem; min-height:1.2em; margin-top:8px}
+.actions{display:flex; gap:10px; margin-top:12px}
+
+/* ---------- Dialog ---------- */
+dialog{
+  color:var(--text); border:1px solid var(--line); border-radius:20px; padding:22px; width:min(460px,calc(100vw - 32px));
+  background:linear-gradient(160deg,#1a1670,#2f1a82); box-shadow:0 24px 80px rgba(0,0,0,.55);
+}
+dialog::backdrop{background:rgba(5,3,30,.7); -webkit-backdrop-filter:blur(4px); backdrop-filter:blur(4px)}
+dialog h2{font-size:1.15rem; margin-bottom:14px}
+dialog h3{font-size:.8rem; letter-spacing:.09em; text-transform:uppercase; color:var(--muted); margin:20px 0 8px}
+dialog .stack{display:grid; gap:10px}
+dialog .inline{display:flex; gap:8px}
+dialog .inline input{flex:1}
+.members{list-style:none; margin:0 0 10px; padding:0; display:grid; gap:6px}
+.members li{display:flex; justify-content:space-between; align-items:center; gap:8px; padding:6px 10px; border-radius:10px; background:rgba(255,255,255,.07)}
+.mbtns{display:flex; gap:6px; flex:0 0 auto}
+.dlg-foot{display:flex; justify-content:flex-end; margin-top:20px}
+
+.foot{margin-top:34px; text-align:center; color:var(--muted); font-size:.8rem}
+.toast{
+  position:fixed; left:50%; bottom:22px; transform:translate(-50%,20px); opacity:0; z-index:20; pointer-events:none;
+  background:#fff; color:var(--ink); font-weight:600; font-size:.88rem; padding:10px 18px; border-radius:999px;
+  transition:opacity .2s, transform .2s;
+}
+.toast.show{opacity:1; transform:translate(-50%,0)}
+
+/* ---------- Layar kecil ---------- */
+@media (max-width:700px){
+  .stats{grid-template-columns:1fr}
+  .fgrid{grid-template-columns:1fr}
+  .row.head{display:none}
+  .row,.is-admin .row{
+    grid-template-columns:1fr auto; grid-template-areas:"who amt" "desc desc" "date acts"; padding:13px 16px;
+  }
+  .row .who{grid-area:who} .row .amt{grid-area:amt} .row .desc{grid-area:desc}
+  .row .date{grid-area:date; font-size:.8rem} .row .acts{grid-area:acts}
+  .hero{padding:18px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="space" aria-hidden="true"></div>
+<canvas id="stars" aria-hidden="true"></canvas>
+
+<!-- Bar admin (hanya muncul setelah login) -->
+<div id="adminbar" class="adminbar" hidden>
+  <div class="adminbar-in">
+    <span class="pill-admin">Mode Admin</span>
+    <span id="dirtyMsg" class="dirty" hidden>Ada perubahan yang belum diterbitkan</span>
+    <span class="grow"></span>
+    <button type="button" class="btn small primary" id="btnDownload">Unduh data.js</button>
+    <button type="button" class="btn small" id="btnDiscard" hidden>Buang perubahan</button>
+    <button type="button" class="btn small" id="btnSettings">Pengaturan</button>
+    <button type="button" class="btn small" id="btnLogout">Keluar</button>
+  </div>
+  <details class="howto">
+    <summary>Cara menerbitkan perubahan ke web</summary>
+    <ol>
+      <li>Klik <b>Unduh data.js</b>.</li>
+      <li>Ganti file <b>data.js</b> lama di hosting Anda dengan file yang baru diunduh.</li>
+      <li>Segarkan (refresh) web. Semua pengunjung kini melihat data terbaru.</li>
+    </ol>
+  </details>
+</div>
+
+<main class="wrap">
+  <header class="top">
+    <div>
+      <h1 id="judul">Uang Kas</h1>
+      <p id="subjudul"></p>
+    </div>
+    <button type="button" class="btn" id="btnAdmin">Admin</button>
+  </header>
+
+  <div class="yearbar">
+    <button type="button" id="yPrev" aria-label="Tahun sebelumnya">&lsaquo;</button>
+    <strong id="yLabel" class="num">2026</strong>
+    <button type="button" id="yNext" aria-label="Tahun berikutnya">&rsaquo;</button>
+  </div>
+  <nav id="tabs" class="tabs" aria-label="Pilih bulan"></nav>
+
+  <section class="hero card" aria-label="Total semua uang">
+    <span class="label">Total semua uang kas</span>
+    <strong class="big num" id="totalAll">Rp 0</strong>
+    <span class="sub" id="totalAllSub"></span>
+  </section>
+
+  <section class="stats" aria-label="Ringkasan periode">
+    <div class="card stat in"><span class="label" id="lblMasuk">Pemasukan</span><strong class="num" id="stMasuk">Rp 0</strong></div>
+    <div class="card stat out"><span class="label" id="lblKeluar">Pengeluaran</span><strong class="num" id="stKeluar">Rp 0</strong></div>
+    <div class="card stat"><span class="label" id="lblSaldo">Saldo</span><strong class="num" id="stSaldo">Rp 0</strong></div>
+  </section>
+
+  <!-- Form tambah / kurangi uang (hanya admin) -->
+  <section id="adminPanel" class="card panel" hidden>
+    <h2 id="formTitle">Catat uang kas</h2>
+    <form id="trxForm" novalidate>
+      <div class="seg" role="group" aria-label="Jenis transaksi">
+        <button type="button" class="masuk" data-jenis="masuk" aria-pressed="true">+ Tambah uang</button>
+        <button type="button" class="keluar" data-jenis="keluar" aria-pressed="false">− Kurangi uang</button>
+      </div>
+      <div class="fgrid">
+        <label class="f">Tanggal<input type="date" id="fTanggal" required></label>
+        <label class="f">Nama<select id="fNama"></select></label>
+        <label class="f">Jumlah (Rp)
+          <input id="fJumlah" inputmode="numeric" autocomplete="off" placeholder="contoh: 10000">
+          <span class="preview num" id="fPreview"></span>
+        </label>
+        <label class="f">Untuk bulan<select id="fBulan"></select></label>
+        <label class="f">Tahun<select id="fTahun"></select></label>
+        <label class="f" id="fCountWrap">Bayar untuk berapa bulan?
+          <input id="fCount" type="number" min="1" max="12" value="1" inputmode="numeric">
+          <span class="preview">Isi 3 jika bayar di muka 3 bulan (jumlah dicatat per bulan)</span>
+        </label>
+        <label class="f span3">Keterangan<input id="fKet" maxlength="80" autocomplete="off" placeholder="contoh: Kas minggu 1"></label>
+      </div>
+      <div class="err" id="fError" role="alert"></div>
+      <div class="actions">
+        <button type="submit" class="btn primary" id="fSubmit">Simpan</button>
+        <button type="button" class="btn" id="fCancel" hidden>Batal</button>
+      </div>
+    </form>
+  </section>
+
+  <div class="sec-title"><h2>Total per orang</h2><span id="peopleSub"></span></div>
+  <section class="people" id="people"></section>
+
+  <div class="sec-title"><h2>Riwayat transaksi</h2><span id="listSub"></span></div>
+  <section class="card list" id="list"></section>
+
+  <p class="foot" id="foot"></p>
+</main>
+
+<!-- Dialog login -->
+<dialog id="dlgLogin">
+  <h2>Masuk sebagai Admin</h2>
+  <form id="loginForm" class="stack">
+    <label class="f">Password<input type="password" id="loginPass" autocomplete="current-password" required></label>
+    <div class="err" id="loginErr" role="alert"></div>
+    <div class="actions" style="justify-content:flex-end">
+      <button type="button" class="btn" id="loginCancel">Batal</button>
+      <button type="submit" class="btn primary">Masuk</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- Dialog pengaturan -->
+<dialog id="dlgSettings">
+  <h2>Pengaturan</h2>
+  <div class="stack">
+    <label class="f">Judul web<input id="sJudul" maxlength="40"></label>
+    <label class="f">Sub judul<input id="sSub" maxlength="80"></label>
+  </div>
+  <h3>Warga</h3>
+  <ul class="members" id="sMembers"></ul>
+  <div class="inline">
+    <input id="sNewMember" maxlength="40" placeholder="Nama warga baru" autocomplete="off">
+    <button type="button" class="btn" id="sAddMember">Tambah</button>
+  </div>
+  <div class="err" id="sErr" role="alert"></div>
+  <h3>Ganti password</h3>
+  <div class="inline">
+    <input type="password" id="sPass" placeholder="Password baru (min. 4 karakter)" autocomplete="new-password">
+    <button type="button" class="btn" id="sSavePass">Ganti</button>
+  </div>
+  <h3>Zona hati-hati</h3>
+  <button type="button" class="btn danger" id="sWipe">Kosongkan semua transaksi</button>
+  <div class="dlg-foot"><button type="button" class="btn primary" id="sClose">Selesai</button></div>
+</dialog>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<noscript><p style="position:relative;z-index:2;padding:20px;text-align:center">Aktifkan JavaScript untuk melihat uang kas.</p></noscript>
+
+<script src="data.js"></script>
+<script>
+/* =====================================================================
+   BAGIAN 1 - Latar bintang (bintik-bintik kecil seperti luar angkasa)
+   ===================================================================== */
+(function () {
+  var c = document.getElementById('stars'), ctx = c.getContext('2d');
+  var w = 0, h = 0, stars = [], shoot = null, nextShoot = 0;
+  var reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var TINTS = ['255,255,255', '255,255,255', '200,222,255', '226,206,255', '170,196,255'];
+
+  // Posisi bintang disimpan sebagai 0..1 supaya tidak "loncat" saat layar berubah ukuran.
+  var count = 220;
+  for (var i = 0; i < count; i++) {
+    var big = Math.random() < 0.08;
+    stars.push({
+      nx: Math.random(), ny: Math.random(),
+      r: big ? Math.random() * 0.9 + 1.2 : Math.random() * 0.8 + 0.3,
+      a: Math.random() * 0.5 + 0.35,
+      s: Math.random() * 1.6 + 0.4,
+      p: Math.random() * 6.283,
+      t: TINTS[(Math.random() * TINTS.length) | 0],
+      big: big
+    });
+  }
+
+  function resize() {
+    var dpr = Math.min(window.devicePixelRatio || 1, 2);
+    var nw = window.innerWidth, nh = window.innerHeight;
+    if (nw === w && Math.abs(nh - h) < 120 && c.width) return; // abaikan perubahan kecil (bar alamat HP)
+    w = nw; h = nh;
+    c.width = Math.round(w * dpr); c.height = Math.round(h * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    draw(0);
+  }
+
+  function draw(t) {
+    ctx.clearRect(0, 0, w, h);
+    for (var i = 0; i < stars.length; i++) {
+      var s = stars[i];
+      var tw = reduce ? 1 : 0.55 + 0.45 * Math.sin(t * s.s + s.p);
+      var a = s.a * tw, x = s.nx * w, y = s.ny * h;
+      if (s.big) {
+        ctx.fillStyle = 'rgba(' + s.t + ',' + (a * 0.16).toFixed(3) + ')';
+        ctx.beginPath(); ctx.arc(x, y, s.r * 3.2, 0, 6.283); ctx.fill();
+      }
+      ctx.fillStyle = 'rgba(' + s.t + ',' + a.toFixed(3) + ')';
+      ctx.beginPath(); ctx.arc(x, y, s.r, 0, 6.283); ctx.fill();
+    }
+    if (shoot) {
+      var k = (t - shoot.t0) / shoot.dur;
+      if (k >= 1) { shoot = null; }
+      else {
+        var px = shoot.x + shoot.vx * k, py = shoot.y + shoot.vy * k;
+        var tx = px - shoot.vx * 0.12, ty = py - shoot.vy * 0.12;
+        var g = ctx.createLinearGradient(px, py, tx, ty);
+        var al = Math.sin(k * Math.PI);
+        g.addColorStop(0, 'rgba(255,255,255,' + (0.9 * al).toFixed(3) + ')');
+        g.addColorStop(1, 'rgba(180,200,255,0)');
+        ctx.strokeStyle = g; ctx.lineWidth = 1.6; ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(tx, ty); ctx.stroke();
+      }
+    }
+  }
+
+  var last = 0;
+  function frame(ms) {
+    var t = ms / 1000;
+    if (ms - last > 33) {
+      if (!shoot && t > nextShoot) {
+        shoot = { x: w * (0.45 + Math.random() * 0.5), y: Math.random() * h * 0.4, vx: -(w * 0.35 + 120), vy: h * 0.18 + 60, t0: t, dur: 1.1 };
+        nextShoot = t + 6 + Math.random() * 7;
+      }
+      draw(t); last = ms;
+    }
+    requestAnimationFrame(frame);
+  }
+
+  window.addEventListener('resize', resize);
+  resize();
+  if (!reduce) { nextShoot = 3; requestAnimationFrame(frame); }
+})();
+
+/* =====================================================================
+   BAGIAN 2 - Hash password (SHA-256)
+   ===================================================================== */
+var SHA_K = [
+  0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,
+  0xd807aa98,0x12835b01,0x243185be,0x550c7dc3,0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174,
+  0xe49b69c1,0xefbe4786,0x0fc19dc6,0x240ca1cc,0x2de92c6f,0x4a7484aa,0x5cb0a9dc,0x76f988da,
+  0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7,0xc6e00bf3,0xd5a79147,0x06ca6351,0x14292967,
+  0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13,0x650a7354,0x766a0abb,0x81c2c92e,0x92722c85,
+  0xa2bfe8a1,0xa81a664b,0xc24b8b70,0xc76c51a3,0xd192e819,0xd6990624,0xf40e3585,0x106aa070,
+  0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5,0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3,
+  0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2
+];
+function sha256Fallback(msg) {
+  var ror = function (x, n) { return (x >>> n) | (x << (32 - n)); };
+  var bytes = new TextEncoder().encode(msg), l = bytes.length;
+  var buf = new Uint8Array(((l + 9 + 63) >> 6) << 6);
+  buf.set(bytes); buf[l] = 0x80;
+  var dv = new DataView(buf.buffer);
+  dv.setUint32(buf.length - 8, Math.floor(l * 8 / 0x100000000));
+  dv.setUint32(buf.length - 4, (l * 8) >>> 0);
+  var H = [0x6a09e667,0xbb67ae85,0x3c6ef372,0xa54ff53a,0x510e527f,0x9b05688c,0x1f83d9ab,0x5be0cd19];
+  var w = new Uint32Array(64);
+  for (var i = 0; i < buf.length; i += 64) {
+    for (var t = 0; t < 16; t++) w[t] = dv.getUint32(i + t * 4);
+    for (t = 16; t < 64; t++) {
+      var s0 = ror(w[t-15],7) ^ ror(w[t-15],18) ^ (w[t-15] >>> 3);
+      var s1 = ror(w[t-2],17) ^ ror(w[t-2],19) ^ (w[t-2] >>> 10);
+      w[t] = (w[t-16] + s0 + w[t-7] + s1) >>> 0;
+    }
+    var a = H[0], b = H[1], c = H[2], d = H[3], e = H[4], f = H[5], g = H[6], hh = H[7];
+    for (t = 0; t < 64; t++) {
+      var S1 = ror(e,6) ^ ror(e,11) ^ ror(e,25), ch = (e & f) ^ (~e & g);
+      var t1 = (hh + S1 + ch + SHA_K[t] + w[t]) >>> 0;
+      var S0 = ror(a,2) ^ ror(a,13) ^ ror(a,22), maj = (a & b) ^ (a & c) ^ (b & c);
+      var t2 = (S0 + maj) >>> 0;
+      hh = g; g = f; f = e; e = (d + t1) >>> 0; d = c; c = b; b = a; a = (t1 + t2) >>> 0;
+    }
+    H = [(H[0]+a)>>>0,(H[1]+b)>>>0,(H[2]+c)>>>0,(H[3]+d)>>>0,(H[4]+e)>>>0,(H[5]+f)>>>0,(H[6]+g)>>>0,(H[7]+hh)>>>0];
+  }
+  return H.map(function (x) { return ('00000000' + x.toString(16)).slice(-8); }).join('');
+}
+async function sha256(text) {
+  try {
+    if (window.crypto && crypto.subtle) {
+      var buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+      return Array.from(new Uint8Array(buf)).map(function (b) { return b.toString(16).padStart(2, '0'); }).join('');
+    }
+  } catch (e) { /* pakai cadangan */ }
+  return sha256Fallback(text);
+}
+
+/* =====================================================================
+   BAGIAN 3 - Aplikasi uang kas
+   ===================================================================== */
+(function () {
+  'use strict';
+
+  var ADMIN_KEY = 'kas_admin', DRAFT_KEY = 'kas_draft_v1';
+  var BULAN = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+  var BULAN_P = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+
+  /* ---------- helper ---------- */
+  function $(s, r) { return (r || document).querySelector(s); }
+  function pad(n) { return String(n).padStart(2, '0'); }
+  function uid() { return 'x' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+  function todayStr() { var d = new Date(); return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
+  function curMonth() { return todayStr().slice(0, 7); }
+  function store(op, k, v) {
+    try {
+      if (op === 'get') return window.localStorage.getItem(k);
+      if (op === 'set') window.localStorage.setItem(k, v);
+      if (op === 'del') window.localStorage.removeItem(k);
+    } catch (e) {}
+    return null;
+  }
+  function sess(op, k, v) {
+    try {
+      if (op === 'get') return window.sessionStorage.getItem(k);
+      if (op === 'set') window.sessionStorage.setItem(k, v);
+      if (op === 'del') window.sessionStorage.removeItem(k);
+    } catch (e) {}
+    return null;
+  }
+  function h(tag, props) {
+    var el = document.createElement(tag);
+    if (props) Object.keys(props).forEach(function (k) {
+      var v = props[k];
+      if (v == null || v === false) return;
+      if (k === 'class') el.className = v;
+      else if (k.slice(0, 2) === 'on') el.addEventListener(k.slice(2), v);
+      else el.setAttribute(k, v === true ? '' : v);
+    });
+    (function add(kids) {
+      for (var i = 0; i < kids.length; i++) {
+        var kid = kids[i];
+        if (kid == null || kid === false) continue;
+        if (Array.isArray(kid)) add(kid);
+        else el.append(kid.nodeType ? kid : document.createTextNode(String(kid)));
+      }
+    })(Array.prototype.slice.call(arguments, 2));
+    return el;
+  }
+  function rp(n) {
+    var neg = n < 0;
+    return (neg ? '−' : '') + 'Rp ' + Math.abs(Math.round(n)).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  }
+  function monthLabel(key, short) {
+    var p = key.split('-'); return (short ? BULAN_P : BULAN)[+p[1] - 1] + ' ' + p[0];
+  }
+  function dateLabel(iso, withYear) {
+    var p = iso.split('-');
+    return +p[2] + ' ' + BULAN_P[+p[1] - 1] + (withYear ? ' ' + p[0] : '');
+  }
+  function signed(t) { return t.jenis === 'keluar' ? -t.jumlah : t.jumlah; }
+  function parseAmount(v) { return parseInt(String(v).replace(/\D/g, ''), 10) || 0; }
+  function clone(o) { return JSON.parse(JSON.stringify(o)); }
+
+  function normalize(raw) {
+    raw = raw && typeof raw === 'object' ? raw : {};
+    var seen = {}, anggota = [];
+    (Array.isArray(raw.anggota) ? raw.anggota : []).forEach(function (n) {
+      n = String(n).trim();
+      if (n && !seen[n.toLowerCase()]) { seen[n.toLowerCase()] = 1; anggota.push(n); }
+    });
+    var transaksi = (Array.isArray(raw.transaksi) ? raw.transaksi : []).map(function (t) {
+      t = t || {};
+      var tg = /^\d{4}-\d{2}-\d{2}$/.test(t.tanggal) ? t.tanggal : todayStr();
+      return {
+        id: String(t.id || uid()),
+        tanggal: tg,
+        // "bulan" = uang ini untuk bulan apa (bisa beda dari tanggal bayar, misal bayar di muka)
+        bulan: /^\d{4}-(0[1-9]|1[0-2])$/.test(t.bulan) ? t.bulan : tg.slice(0, 7),
+        nama: String(t.nama || '').trim(),
+        keterangan: String(t.keterangan || '').trim(),
+        jenis: t.jenis === 'keluar' ? 'keluar' : 'masuk',
+        jumlah: Math.max(0, Math.round(Number(t.jumlah) || 0))
+      };
+    });
+    return {
+      judul: String(raw.judul || 'Uang Kas'),
+      subjudul: String(raw.subjudul || ''),
+      passwordHash: String(raw.passwordHash || ''),
+      updatedAt: String(raw.updatedAt || new Date(0).toISOString()),
+      anggota: anggota,
+      transaksi: transaksi
+    };
+  }
+
+  /* ---------- state ---------- */
+  var ORIGINAL = normalize(window.KAS_DATA);
+  var data = clone(ORIGINAL);
+  var state = { isAdmin: false, tab: 'all', year: new Date().getFullYear(), editingId: null, jenis: 'masuk', bulanTouched: false };
+  function addMonths(key, n) {
+    var t = +key.slice(0, 4) * 12 + (+key.slice(5) - 1) + n;
+    return Math.floor(t / 12) + '-' + pad((t % 12) + 1);
+  }
+
+  function isDirty() { return state.isAdmin && data.updatedAt !== ORIGINAL.updatedAt; }
+
+  function loadDraft() {
+    var raw = store('get', DRAFT_KEY);
+    if (!raw) return;
+    try {
+      var d = normalize(JSON.parse(raw));
+      if (new Date(d.updatedAt) > new Date(ORIGINAL.updatedAt)) data = d;
+      else store('del', DRAFT_KEY);
+    } catch (e) { store('del', DRAFT_KEY); }
+  }
+  function commit() {
+    data.updatedAt = new Date().toISOString();
+    store('set', DRAFT_KEY, JSON.stringify(data));
+    render();
+  }
+
+  var toastTimer;
+  function toast(msg) {
+    var t = $('#toast'); t.textContent = msg; t.classList.add('show');
+    clearTimeout(toastTimer); toastTimer = setTimeout(function () { t.classList.remove('show'); }, 2600);
+  }
+
+  /* ---------- hitungan ---------- */
+  function inPeriod(t) { return state.tab === 'all' ? t.bulan.slice(0, 4) === String(state.year) : t.bulan === state.tab; }
+  function yearRange() {
+    var cy = new Date().getFullYear(), lo = cy, hi = cy + 1;
+    data.transaksi.forEach(function (t) { var y = +t.bulan.slice(0, 4); if (y < lo) lo = y; if (y > hi) hi = y; });
+    return [lo, hi];
+  }
+  function periodTag() { return state.tab === 'all' ? 'tahun ' + state.year : monthLabel(state.tab); }
+  function periodShort() { return state.tab === 'all' ? 'Tahun ' + state.year : monthLabel(state.tab, true); }
+  function totals(list) {
+    var m = 0, k = 0;
+    list.forEach(function (t) { if (t.jenis === 'keluar') k += t.jumlah; else m += t.jumlah; });
+    return { masuk: m, keluar: k, saldo: m - k };
+  }
+  function sumByName(list, name) {
+    return list.reduce(function (s, t) { return t.nama === name ? s + signed(t) : s; }, 0);
+  }
+  function allNames() {
+    var names = data.anggota.slice();
+    data.transaksi.forEach(function (t) { if (t.nama && names.indexOf(t.nama) < 0) names.push(t.nama); });
+    return names;
+  }
+
+  /* ---------- render ---------- */
+  function syncHash() {
+    try { history.replaceState(null, '', state.tab === 'all' ? '#' + state.year : '#' + state.tab); } catch (e) {}
+  }
+  // Kalau form belum diutak-atik, "Untuk bulan" ikut bulan yang sedang dibuka.
+  function followTabInForm() {
+    if (!state.editingId && !state.bulanTouched) setPeriodSelects(defaultBulan());
+  }
+  function setTab(key) {
+    state.tab = key; if (key !== 'all') state.year = +key.slice(0, 4);
+    followTabInForm(); syncHash(); render();
+  }
+  function setYear(y) {
+    var r = yearRange(); if (y < r[0] || y > r[1]) return;
+    state.year = y; if (state.tab !== 'all') state.tab = y + state.tab.slice(4);
+    followTabInForm(); syncHash(); render();
+  }
+
+  function renderTabs() {
+    var nav = $('#tabs'), has = {}, r = yearRange();
+    data.transaksi.forEach(function (t) { has[t.bulan] = 1; });
+    var items = [{ key: 'all', label: 'Setahun' }].concat(BULAN_P.map(function (n, i) { return { key: state.year + '-' + pad(i + 1), label: n }; }));
+    nav.replaceChildren.apply(nav, items.map(function (it) {
+      return h('button', {
+        type: 'button', class: 'tab' + (has[it.key] ? ' has' : ''), 'aria-current': state.tab === it.key ? 'true' : null,
+        'aria-label': it.key === 'all' ? 'Setahun penuh ' + state.year : monthLabel(it.key),
+        onclick: function () { setTab(it.key); }
+      }, it.label);
+    }));
+    $('#yLabel').textContent = state.year;
+    $('#yPrev').disabled = state.year <= r[0];
+    $('#yNext').disabled = state.year >= r[1];
+    var cur = nav.querySelector('[aria-current]');
+    if (cur) nav.scrollLeft = cur.offsetLeft - nav.clientWidth / 2 + cur.offsetWidth / 2;
+  }
+
+  function renderSummary() {
+    var all = totals(data.transaksi), per = totals(data.transaksi.filter(inPeriod));
+    var tag = periodTag();
+    $('#totalAll').textContent = rp(all.saldo);
+    $('#totalAllSub').textContent = 'Gabungan semua bulan dan tahun · ' + data.transaksi.length + ' transaksi';
+    $('#lblMasuk').textContent = 'Pemasukan · ' + tag;
+    $('#lblKeluar').textContent = 'Pengeluaran · ' + tag;
+    $('#lblSaldo').textContent = 'Saldo · ' + tag;
+    $('#stMasuk').textContent = rp(per.masuk);
+    $('#stKeluar').textContent = rp(per.keluar);
+    var s = $('#stSaldo'); s.textContent = rp(per.saldo);
+    s.className = 'num ' + (per.saldo < 0 ? 'neg' : '');
+  }
+
+  function renderPeople() {
+    var box = $('#people'), names = allNames(), period = data.transaksi.filter(inPeriod);
+    $('#peopleSub').textContent = (state.tab === 'all' ? 'Tahun ' + state.year : monthLabel(state.tab)) + ' dan total keseluruhan';
+    function card(name, i, umum) {
+      var tot = sumByName(data.transaksi, name), per = sumByName(period, name);
+      var hue = (220 + i * 38) % 360;
+      var rows = [];
+      rows.push(h('div', null, h('dt', null, periodShort()), h('dd', { class: 'num ' + (per < 0 ? 'neg' : per > 0 ? 'pos' : '') }, rp(per))));
+      rows.push(h('div', null, h('dt', null, 'Total'), h('dd', { class: 'total num ' + (tot < 0 ? 'neg' : '') }, rp(tot))));
+      return h('article', { class: 'card person' },
+        h('div', { class: 'who' },
+          h('span', { class: 'avatar', style: 'background:hsl(' + hue + ',85%,75%)' }, umum ? '★' : name.charAt(0).toUpperCase()),
+          h('span', { class: 'name' }, umum ? 'Kas umum' : name)),
+        h('dl', null, rows));
+    }
+    var kids = names.map(function (n, i) { return card(n, i, false); });
+    if (data.transaksi.some(function (t) { return !t.nama; })) kids.push(card('', names.length, true));
+    if (!kids.length) kids.push(h('p', { class: 'empty card' }, 'Belum ada warga.'));
+    box.replaceChildren.apply(box, kids);
+  }
+
+  function renderList() {
+    var list = $('#list');
+    list.className = 'card list' + (state.isAdmin ? ' is-admin' : '');
+    var rows = data.transaksi.map(function (t, i) { return [t, i]; }).filter(function (p) { return inPeriod(p[0]); })
+      .sort(function (a, b) { return b[0].tanggal.localeCompare(a[0].tanggal) || b[1] - a[1]; })
+      .map(function (p) { return p[0]; });
+    $('#listSub').textContent = rows.length + ' transaksi';
+    if (!rows.length) {
+      list.replaceChildren(h('p', { class: 'empty' }, 'Belum ada transaksi untuk periode ini.'));
+      return;
+    }
+    var head = h('div', { class: 'row head', 'aria-hidden': 'true' },
+      h('span', null, 'Tanggal'), h('span', null, 'Nama'), h('span', null, 'Keterangan'),
+      h('span', { style: 'text-align:right' }, 'Jumlah'), state.isAdmin ? h('span') : null);
+    var body = rows.map(function (t) {
+      var out = t.jenis === 'keluar';
+      return h('div', { class: 'row' },
+        h('span', { class: 'date' }, dateLabel(t.tanggal, t.tanggal.slice(0, 4) !== String(state.year))),
+        h('span', { class: 'who' + (t.nama ? '' : ' umum') }, t.nama || 'Kas umum'),
+        h('span', { class: 'desc' }, t.keterangan || (out ? 'Pengeluaran' : 'Kas'),
+          t.bulan !== t.tanggal.slice(0, 7) ? h('span', { class: 'tag' }, 'untuk ' + monthLabel(t.bulan, true)) : null),
+        h('span', { class: 'amt ' + (out ? 'neg' : 'pos') }, (out ? '− ' : '+ ') + rp(t.jumlah)),
+        state.isAdmin ? h('span', { class: 'acts' },
+          h('button', { type: 'button', class: 'icon-btn', onclick: function () { startEdit(t.id); } }, 'Ubah'),
+          h('button', { type: 'button', class: 'icon-btn del', onclick: function () { removeTrx(t.id); } }, 'Hapus')) : null);
+    });
+    list.replaceChildren.apply(list, [head].concat(body));
+  }
+
+  function renderAdmin() {
+    $('#adminbar').hidden = !state.isAdmin;
+    $('#adminPanel').hidden = !state.isAdmin;
+    $('#btnAdmin').hidden = state.isAdmin;
+    var d = isDirty();
+    $('#dirtyMsg').hidden = !d;
+    $('#btnDiscard').hidden = !d;
+    if (state.isAdmin) buildNamaOptions();
+  }
+
+  function render() {
+    document.title = data.judul;
+    $('#judul').textContent = data.judul;
+    $('#subjudul').textContent = data.subjudul;
+    $('#subjudul').hidden = !data.subjudul;
+    renderAdmin(); renderTabs(); renderSummary(); renderPeople(); renderList();
+    var d = new Date(data.updatedAt);
+    $('#foot').textContent = isNaN(d) || d.getFullYear() < 2000 ? '' :
+      'Terakhir diperbarui ' + d.getDate() + ' ' + BULAN_P[d.getMonth()] + ' ' + d.getFullYear() + ', ' + pad(d.getHours()) + ':' + pad(d.getMinutes()) +
+      (state.isAdmin ? '' : ' · Halaman ini hanya untuk dilihat');
+  }
+
+  /* ---------- form transaksi ---------- */
+  function setJenis(j) {
+    state.jenis = j;
+    document.querySelectorAll('.seg button').forEach(function (b) { b.setAttribute('aria-pressed', b.dataset.jenis === j ? 'true' : 'false'); });
+    buildNamaOptions();
+  }
+  function buildNamaOptions() {
+    var sel = $('#fNama'), keep = sel.value, opts = [];
+    allNames().forEach(function (n) { opts.push([n, n]); });
+    if (state.jenis === 'masuk' && !state.editingId && data.anggota.length > 1) opts.push(['__all__', 'Semua warga (masing-masing)']);
+    opts.push(['', 'Kas umum (tanpa nama)']);
+    sel.replaceChildren.apply(sel, opts.map(function (o) { return h('option', { value: o[0] }, o[1]); }));
+    if (opts.some(function (o) { return o[0] === keep; })) sel.value = keep;
+    else sel.value = opts[0][0];
+  }
+  function fillPeriodSelects() {
+    var sb = $('#fBulan'), st = $('#fTahun'), r = yearRange(), ys = [];
+    sb.replaceChildren.apply(sb, BULAN.map(function (n, i) { return h('option', { value: pad(i + 1) }, n); }));
+    for (var y = r[0]; y <= r[1] + 1; y++) ys.push(y);
+    st.replaceChildren.apply(st, ys.map(function (y) { return h('option', { value: String(y) }, y); }));
+  }
+  function setPeriodSelects(key) {
+    var st = $('#fTahun'), y = key.slice(0, 4);
+    if (!Array.prototype.some.call(st.options, function (o) { return o.value === y; })) st.append(h('option', { value: y }, y));
+    st.value = y; $('#fBulan').value = key.slice(5);
+  }
+  function selectedBulan() { return $('#fTahun').value + '-' + $('#fBulan').value; }
+  function defaultBulan() {
+    if (state.tab !== 'all') return state.tab;
+    return state.year === new Date().getFullYear() ? curMonth() : state.year + '-01';
+  }
+  function resetForm() {
+    state.editingId = null; state.bulanTouched = false;
+    $('#fTanggal').value = todayStr();
+    fillPeriodSelects(); setPeriodSelects(defaultBulan());
+    $('#fCount').value = '1'; $('#fCountWrap').hidden = false;
+    $('#fJumlah').value = ''; $('#fKet').value = ''; $('#fPreview').textContent = ''; $('#fError').textContent = '';
+    $('#formTitle').textContent = 'Catat uang kas';
+    $('#fSubmit').textContent = 'Simpan'; $('#fCancel').hidden = true;
+    setJenis(state.jenis);
+  }
+  function startEdit(id) {
+    var t = data.transaksi.filter(function (x) { return x.id === id; })[0];
+    if (!t) return;
+    state.editingId = id;
+    setJenis(t.jenis);
+    $('#fTanggal').value = t.tanggal; $('#fKet').value = t.keterangan;
+    fillPeriodSelects(); setPeriodSelects(t.bulan); state.bulanTouched = true;
+    $('#fCountWrap').hidden = true;
+    $('#fJumlah').value = String(t.jumlah); $('#fPreview').textContent = rp(t.jumlah);
+    $('#fNama').value = t.nama;
+    $('#formTitle').textContent = 'Ubah transaksi';
+    $('#fSubmit').textContent = 'Simpan perubahan'; $('#fCancel').hidden = false;
+    $('#fError').textContent = '';
+    $('#adminPanel').scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+  function removeTrx(id) {
+    var t = data.transaksi.filter(function (x) { return x.id === id; })[0];
+    if (!t || !confirm('Hapus transaksi "' + (t.keterangan || 'tanpa keterangan') + '" sebesar ' + rp(t.jumlah) + '?')) return;
+    data.transaksi = data.transaksi.filter(function (x) { return x.id !== id; });
+    if (state.editingId === id) resetForm();
+    commit(); toast('Transaksi dihapus');
+  }
+  function submitForm(e) {
+    e.preventDefault();
+    var tanggal = $('#fTanggal').value, jumlah = parseAmount($('#fJumlah').value), nama = $('#fNama').value;
+    var ket = $('#fKet').value.trim(), jenis = state.jenis, err = $('#fError');
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(tanggal)) { err.textContent = 'Isi tanggal dulu.'; return; }
+    if (jumlah <= 0) { err.textContent = 'Jumlah uang harus lebih dari 0.'; return; }
+    if (!ket) ket = jenis === 'masuk' ? 'Kas' : 'Pengeluaran';
+    err.textContent = '';
+    var bulan0 = selectedBulan();
+    var count = state.editingId ? 1 : Math.min(12, Math.max(1, parseInt($('#fCount').value, 10) || 1));
+    if (state.editingId) {
+      var t = data.transaksi.filter(function (x) { return x.id === state.editingId; })[0];
+      if (t) { t.tanggal = tanggal; t.bulan = bulan0; t.nama = nama; t.keterangan = ket; t.jenis = jenis; t.jumlah = jumlah; }
+      toast('Perubahan disimpan');
+    } else {
+      var who = nama === '__all__' ? data.anggota.slice() : [nama];
+      for (var i = 0; i < count; i++) {
+        who.forEach(function (m) {
+          data.transaksi.push({ id: uid(), tanggal: tanggal, bulan: addMonths(bulan0, i), nama: m, keterangan: ket, jenis: jenis, jumlah: jumlah });
+        });
+      }
+      var n = who.length * count;
+      toast(n > 1 ? n + ' catatan ditambahkan' : (jenis === 'masuk' ? 'Uang ditambahkan' : 'Uang dikurangi'));
+    }
+    // Pindah ke bulan tujuan supaya catatan baru langsung kelihatan
+    state.year = +bulan0.slice(0, 4);
+    if (state.tab !== 'all') state.tab = bulan0;
+    syncHash();
+    resetForm();
+    commit();
+  }
+
+  /* ---------- download data.js ---------- */
+  function downloadData() {
+    var out = '// Dibuat dari mode Admin. Ganti file data.js lama di hosting dengan file ini.\n' +
+      'window.KAS_DATA = ' + JSON.stringify(data, null, 2) + ';\n';
+    var url = URL.createObjectURL(new Blob([out], { type: 'text/javascript' }));
+    var a = h('a', { href: url, download: 'data.js' });
+    document.body.append(a); a.click(); a.remove();
+    setTimeout(function () { URL.revokeObjectURL(url); }, 2000);
+    toast('data.js diunduh. Ganti file lama di hosting.');
+  }
+
+  /* ---------- login / logout ---------- */
+  function enterAdmin() {
+    state.isAdmin = true; sess('set', ADMIN_KEY, '1');
+    loadDraft(); resetForm(); render();
+  }
+  function leaveAdmin() {
+    if (isDirty() && !confirm('Ada perubahan yang belum diunduh. Tetap keluar? (Perubahan tetap tersimpan di browser ini sampai Anda login lagi.)')) return;
+    state.isAdmin = false; sess('del', ADMIN_KEY);
+    data = clone(ORIGINAL); state.editingId = null; render();
+  }
+  async function doLogin(e) {
+    e.preventDefault();
+    var pass = $('#loginPass').value, err = $('#loginErr');
+    if (!ORIGINAL.passwordHash) { err.textContent = 'Password belum diatur di data.js.'; return; }
+    var hash = await sha256(pass);
+    if (hash === ORIGINAL.passwordHash) {
+      $('#dlgLogin').close(); $('#loginPass').value = ''; err.textContent = ''; enterAdmin();
+    } else {
+      err.textContent = 'Password salah.'; $('#loginPass').select();
+    }
+  }
+
+  /* ---------- pengaturan ---------- */
+  function renderMembers() {
+    var ul = $('#sMembers');
+    ul.replaceChildren.apply(ul, data.anggota.map(function (n) {
+      return h('li', null, h('span', null, n), h('span', { class: 'mbtns' },
+        h('button', { type: 'button', class: 'icon-btn', onclick: function () { renameMember(n); } }, 'Ubah nama'),
+        h('button', { type: 'button', class: 'icon-btn del', onclick: function () { removeMember(n); } }, 'Hapus')));
+    }));
+    if (!data.anggota.length) ul.replaceChildren(h('li', null, 'Belum ada warga.'));
+  }
+  function renameMember(old) {
+    var n = prompt('Ganti nama "' + old + '" menjadi:', old), err = $('#sErr');
+    if (n === null) return;
+    n = n.trim().slice(0, 40);
+    if (!n) { err.textContent = 'Nama tidak boleh kosong.'; return; }
+    if (n === old) return;
+    if (allNames().some(function (x) { return x !== old && x.toLowerCase() === n.toLowerCase(); })) { err.textContent = 'Nama itu sudah ada.'; return; }
+    data.anggota = data.anggota.map(function (x) { return x === old ? n : x; });
+    data.transaksi.forEach(function (t) { if (t.nama === old) t.nama = n; });
+    err.textContent = ''; commit(); renderMembers(); toast('Nama diganti, semua catatan ikut berubah');
+  }
+  function removeMember(n) {
+    if (data.transaksi.some(function (t) { return t.nama === n; })) {
+      $('#sErr').textContent = n + ' masih punya transaksi, jadi tidak bisa dihapus. Pakai Ubah nama kalau hanya ingin mengganti namanya.'; return;
+    }
+    data.anggota = data.anggota.filter(function (x) { return x !== n; });
+    $('#sErr').textContent = ''; commit(); renderMembers();
+  }
+  function addMember() {
+    var inp = $('#sNewMember'), n = inp.value.trim(), err = $('#sErr');
+    if (!n) { err.textContent = 'Tulis nama warga dulu.'; return; }
+    if (allNames().some(function (x) { return x.toLowerCase() === n.toLowerCase(); })) { err.textContent = 'Nama itu sudah ada.'; return; }
+    data.anggota.push(n); inp.value = ''; err.textContent = '';
+    commit(); renderMembers();
+  }
+  async function savePass() {
+    var p = $('#sPass').value;
+    if (p.length < 4) { $('#sErr').textContent = 'Password minimal 4 karakter.'; return; }
+    data.passwordHash = await sha256(p);
+    $('#sPass').value = ''; $('#sErr').textContent = '';
+    commit(); toast('Password diganti. Unduh data.js agar berlaku.');
+  }
+  function wipe() {
+    if (!data.transaksi.length) return;
+    if (!confirm('Hapus SEMUA ' + data.transaksi.length + ' transaksi? Tindakan ini tidak bisa dibatalkan.')) return;
+    data.transaksi = []; resetForm(); commit(); toast('Semua transaksi dikosongkan');
+  }
+
+  /* ---------- pasang event ---------- */
+  document.querySelectorAll('.seg button').forEach(function (b) { b.addEventListener('click', function () { setJenis(b.dataset.jenis); }); });
+  $('#trxForm').addEventListener('submit', submitForm);
+  $('#fCancel').addEventListener('click', resetForm);
+  $('#yPrev').addEventListener('click', function () { setYear(state.year - 1); });
+  $('#yNext').addEventListener('click', function () { setYear(state.year + 1); });
+  $('#fBulan').addEventListener('change', function () { state.bulanTouched = true; });
+  $('#fTahun').addEventListener('change', function () { state.bulanTouched = true; });
+  $('#fTanggal').addEventListener('change', function () {
+    if (!state.bulanTouched && /^\d{4}-\d{2}-\d{2}$/.test(this.value)) setPeriodSelects(this.value.slice(0, 7));
+  });
+  $('#fJumlah').addEventListener('input', function () {
+    var n = parseAmount(this.value); $('#fPreview').textContent = n ? rp(n) : '';
+  });
+  $('#btnAdmin').addEventListener('click', function () { $('#loginErr').textContent = ''; $('#dlgLogin').showModal(); $('#loginPass').focus(); });
+  $('#loginCancel').addEventListener('click', function () { $('#dlgLogin').close(); });
+  $('#loginForm').addEventListener('submit', doLogin);
+  $('#btnLogout').addEventListener('click', leaveAdmin);
+  $('#btnDownload').addEventListener('click', downloadData);
+  $('#btnDiscard').addEventListener('click', function () {
+    if (!confirm('Buang semua perubahan yang belum diterbitkan dan kembali ke data.js yang aktif?')) return;
+    store('del', DRAFT_KEY); data = clone(ORIGINAL); resetForm(); render(); toast('Perubahan dibuang');
+  });
+  $('#btnSettings').addEventListener('click', function () {
+    $('#sJudul').value = data.judul; $('#sSub').value = data.subjudul; $('#sErr').textContent = '';
+    renderMembers(); $('#dlgSettings').showModal();
+  });
+  $('#sClose').addEventListener('click', function () { $('#dlgSettings').close(); });
+  $('#sJudul').addEventListener('change', function () { data.judul = this.value.trim() || 'Uang Kas'; commit(); });
+  $('#sSub').addEventListener('change', function () { data.subjudul = this.value.trim(); commit(); });
+  $('#sAddMember').addEventListener('click', addMember);
+  $('#sNewMember').addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); addMember(); } });
+  $('#sSavePass').addEventListener('click', savePass);
+  $('#sWipe').addEventListener('click', wipe);
+  window.addEventListener('beforeunload', function (e) { if (isDirty() && !store('get', DRAFT_KEY)) { e.preventDefault(); e.returnValue = ''; } });
+
+  /* ---------- mulai ---------- */
+  var hash = (location.hash || '').replace('#', '');
+  if (/^\d{4}-(0[1-9]|1[0-2])$/.test(hash)) { state.tab = hash; state.year = +hash.slice(0, 4); }
+  else if (/^\d{4}$/.test(hash)) { state.tab = 'all'; state.year = +hash; }
+  else if (hash === 'semua') state.tab = 'all';
+  else state.tab = curMonth();
+
+  if (sess('get', ADMIN_KEY) === '1') { state.isAdmin = true; loadDraft(); }
+  var yr = yearRange();
+  if (state.year < yr[0] || state.year > yr[1]) { state.year = new Date().getFullYear(); state.tab = curMonth(); }
+  resetForm();
+  render();
+})();
+</script>
+</body>
+</html>
