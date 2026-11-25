@@ -1,0 +1,9 @@
+// Dibuat dari mode Admin. Ganti file data.js lama di hosting dengan file ini.
+window.KAS_DATA = {
+  "judul": "Uang Kas",
+  "subjudul": "Catatan kas bersama",
+  "passwordHash": "87cf13298b48823c9559aaefd028bff27ab621dbd6b8c94f8662386e0c833a07",
+  "updatedAt": "2026-11-25T00:58:43.416Z",
+  "anggota": [],
+  "transaksi": []
+};
